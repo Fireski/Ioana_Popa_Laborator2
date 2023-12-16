@@ -7,23 +7,42 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Ioana_Popa_Laborator2.Data;
 using Ioana_Popa_Laborator2.Models;
+using Ioana_Popa_Laborator2.Models.ViewModels;
 
 namespace Ioana_Popa_Laborator2.Pages.Publishers
 {
     public class IndexModel : PageModel
     {
-        private readonly Ioana_Popa_Laborator2.Data.Ioana_Popa_Laborator2Context _context;
+        private readonly Ioana_Popa_Laborator2Context _context;
 
-        public IndexModel(Ioana_Popa_Laborator2.Data.Ioana_Popa_Laborator2Context context)
+        public IndexModel(Ioana_Popa_Laborator2Context context)
         {
             _context = context;
+            PublisherData = new PublisherIndexData(); // Initialize the PublisherData here
         }
 
-        public IList<Publisher> Publisher { get;set; } = default!;
+        public IList<Publisher> Publisher { get; set; } = default!;
+        public PublisherIndexData PublisherData { get; set; }
+        public int PublisherID { get; set; }
+        public int BookID { get; set; }
 
-        public async Task OnGetAsync()
+        public async Task OnGetAsync(int? id, int? bookID)
         {
-            Publisher = await _context.Publisher.ToListAsync();
+            PublisherData.Publishers = await _context.Publisher
+                .Include(i => i.Books)
+                .ThenInclude(c => c.Author)
+                .OrderBy(i => i.PublisherName)
+                .ToListAsync();
+
+            if (id != null)
+            {
+                PublisherID = id.Value;
+                Publisher publisher = PublisherData.Publishers
+                    .Where(i => i.ID == id.Value).Single();
+                PublisherData.Books = publisher.Books;
+            }
         }
+
+        // Removed the duplicate OnGetAsync method
     }
 }
